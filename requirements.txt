@@ -1,0 +1,4 @@
+Flask==3.0.3
+flask_sitemapper==1.8.0
+python-dotenv==1.0.1
+Frozen-Flask==1.0.2

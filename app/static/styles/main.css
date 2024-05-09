@@ -28,11 +28,12 @@ body {
     box-shadow: 10px 10px rgba(90, 90, 90, 0.75);
 }
 .banner h1 {
+    margin: 10px 0;
     color: var(--fnt-org);
 }
 .banner hr {
     border: 1px solid #fff;
-    width: 100%;
+    width: 350px;
     margin: 0.5em 0;
 }
 .text-icon {
