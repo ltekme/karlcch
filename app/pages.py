@@ -5,4 +5,3 @@ from . import sitemapper, app
 @app.route('/')
 def index():
     return render_template('index.html.j2', title='KarlCCH | Home', metadata_description='Home of karlcch', config=app.config)
-

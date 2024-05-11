@@ -1,4 +1,4 @@
-**/.flaskenv
+**/.buildenv
 **/__pycache__
 **/venv
 **/.build

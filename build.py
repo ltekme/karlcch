@@ -6,10 +6,10 @@ from app import app
 
 basedir = os.path.dirname(__file__)
 
-build_config = dotenv_values('.flaskenv')
+build_config = dict(dotenv_values('.buildenv'))
 
 if __name__ == '__main__':
     app.config.from_mapping(build_config)
-    app.config["FREEZER_DESTINATION"] = os.path.join(basedir, '.build')
+    app.config["FREEZER_DESTINATION"] = build_config.get('BUILD_DESTINATION') or os.path.join(basedir, '.build')
     freezer = Freezer(app)
     freezer.freeze()

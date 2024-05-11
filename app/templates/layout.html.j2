@@ -10,11 +10,11 @@
     <meta name="msapplication-TileColor" content="#07041b">
     <meta name="theme-color" content="#07041b">
     {% if title %}<title>{{ title }}</title>{% else %}<title>Karlcch</title>{% endif %}
-    <link rel="stylesheet" href="{{ url_for('static_content', path='styles/normalize.css', _external=config.get('URL_EXTERNAL'), _scheme=config.get('URL_SCHEME')) }}">
+    <link rel="stylesheet" href="{{ url_for('static_content', path='styles/normalize.css', _scheme=config.get('URL_SCHEME')) }}">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static_content', path='styles/main.css', _external=config.get('URL_EXTERNAL'), _scheme=config.get('URL_SCHEME')) }}">
+    <link rel="stylesheet" href="{{ url_for('static_content', path='styles/main.css', _scheme=config.get('URL_SCHEME')) }}">
 </head>
 
 <bodY>{% block body_content %}{% endblock body_content %}</bodY>

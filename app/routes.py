@@ -1,14 +1,11 @@
 from io import StringIO, BytesIO
 from flask import render_template, send_from_directory, send_file, request
-from . import app, sitemapper
+from . import app, sitemapper, pages
 
 
 @app.route('/static/<path:path>')
 def static_content(path):
     return send_from_directory('static', path)
-
-
-from . import pages
 
 
 @app.route('/favicon.ico')
@@ -20,18 +17,13 @@ def favicon_ico():
 def robots():
     # get hostname
     hostname = app.config.get('SERVER_NAME') or request.host
-    if app.config['URL_SCHEME'] == 'https':
+    if app.config.get('URL_SCHEME') == 'https':
         hostname = 'https://' + hostname
     else:
         hostname = 'http://' + hostname
-
-    # setup robots file
-    robot_file = f'''# https://www.robotstxt.org/robotstxt.html
-User-agent: *
-Disallow:
-sitemap: {hostname}/sitemap.xml'''
-
-    # store as file in memory
+    # render file
+    robot_file = render_template('robots.txt', hostname=hostname)
+    # store to memory as a virtaul file
     mem = BytesIO()
     mem.write(robot_file.encode('utf8'))
     mem.seek(0)
