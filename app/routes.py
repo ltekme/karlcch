@@ -20,7 +20,7 @@ def favicon_ico():
 def robots():
     # get hostname
     hostname = app.config.get('SERVER_NAME') or request.host
-    if request.is_secure:
+    if app.config['URL_SCHEME'] == 'https':
         hostname = 'https://' + hostname
     else:
         hostname = 'http://' + hostname
@@ -41,7 +41,7 @@ sitemap: {hostname}/sitemap.xml'''
 
 @app.route('/errors.html')
 def error_file():
-    return render_template('errors.html.j2', title='karlcch')
+    return render_template('errors.html.j2', title='karlcch', config=app.config)
 
 
 @app.errorhandler(404)
