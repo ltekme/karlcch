@@ -1,0 +1,29 @@
+{
+  "build": { "dockerfile": "Dockerfile" },
+  "name": "Some website",
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "samuelcolvin.jinjahtml",
+        "monosans.djlint",
+        "esbenp.prettier-vscode",
+        "FallenMax.mithril-emmet",
+        "ms-python.pylint",
+        "ms-python.autopep8",
+        "GitHub.copilot",
+        "hashicorp.terraform"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "installTools": true,
+      "optimize": true,
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1": {}
+  }
+}
