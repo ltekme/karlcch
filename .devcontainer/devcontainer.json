@@ -1,29 +1,39 @@
 {
-  "build": { "dockerfile": "Dockerfile" },
-  "name": "Some website",
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+  // "postCreateCommand": "echo 'alias tf=terraform' > /home/vscode/.bash_aliases",
   "customizations": {
     "vscode": {
-      "settings": {},
+      "settings": {
+        "[markdown]": {
+          "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+        },
+        "[html]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.suggest.insertMode": "replace",
+          "djlint.enableLinting": true
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.maxTokenizationLineLength": 2500
+        },
+        "[css]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.suggest.insertMode": "replace"
+        },
+        "files.autoSave": "afterDelay",
+        "files.autoSaveDelay": 3000
+      },
       "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "samuelcolvin.jinjahtml",
-        "monosans.djlint",
         "esbenp.prettier-vscode",
         "FallenMax.mithril-emmet",
-        "ms-python.pylint",
-        "ms-python.autopep8",
         "GitHub.copilot",
-        "hashicorp.terraform"
+        "yzhang.markdown-all-in-one",
+        "DavidAnson.vscode-markdownlint",
+        "ms-vscode.live-server"
       ]
     }
   },
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {
-      "installTools": true,
-      "optimize": true,
-      "version": "3.12"
-    },
     "ghcr.io/devcontainers/features/aws-cli:1": {}
   }
 }

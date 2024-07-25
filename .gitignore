@@ -1,4 +1,1 @@
-**/.buildenv
-**/__pycache__
-**/venv
-**/.build
+.config
