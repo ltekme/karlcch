@@ -1,4 +1,4 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Disallow:
-sitemap: http://ltek.me/sitemap.xml
+sitemap: https://ltek.me/sitemap.xml
