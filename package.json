@@ -1,8 +1,8 @@
 {
-  "name": "github",
+  "name": "ltekme",
   "version": "0.1.0",
   "bin": {
-    "github": "bin/github.js"
+    "github": "bin/site.ts"
   },
   "scripts": {
     "build": "tsc",
