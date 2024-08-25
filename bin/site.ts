@@ -14,4 +14,6 @@ const siteDistributionStack = new SiteDistStack(app, 'ltekme-SiteDistributionSta
     description: "CloudFront Distribution for ltek.me"
 });
 
+siteDistributionStack.addDependency(siteContentStack);
+
 app.synth();
