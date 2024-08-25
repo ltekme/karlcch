@@ -10,7 +10,7 @@ const siteContentStack = new SiteContentStack(app, 'ltekme-SiteContentStack', {
     description: "S3 static site store for ltek.me"
 });
 
-const SiteDistributionStack = new SiteDistStack(app, 'ltekme-SiteDistributionStack', {
+const siteDistributionStack = new SiteDistStack(app, 'ltekme-SiteDistributionStack', {
     description: "CloudFront Distribution for ltek.me"
 });
 

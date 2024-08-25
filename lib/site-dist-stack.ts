@@ -8,12 +8,12 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class SiteDistStack extends cdk.Stack {
 
-    site_bucket: s3.IBucket;
-    site_bucket_arn: string
-    site_bucket_oai: cf.OriginAccessIdentity;
-    site_bucket_policy: s3.BucketPolicy;
+    readonly site_bucket: s3.IBucket;
+    readonly site_bucket_arn: string
+    readonly site_bucket_oai: cf.OriginAccessIdentity;
+    readonly site_bucket_policy: s3.BucketPolicy;
 
-    site_distribution: cf.Distribution
+    readonly site_distribution: cf.Distribution
 
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
