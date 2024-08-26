@@ -20,7 +20,7 @@ export class Route53Stack extends cdk.Stack {
         this.zone = new route53.HostedZone(this, `hosted-zone`, {
             zoneName: this.domainName
         });
-        this.zone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN)
+        this.zone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
 
     }
 }
@@ -43,6 +43,7 @@ export class ACMStack extends cdk.Stack {
             certificateName: `${this.domainName} certificate`,
             validation: acm.CertificateValidation.fromDns(param.route53Zone)
         });
+        this.certificate.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
     }
 }

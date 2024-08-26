@@ -18,34 +18,82 @@ interface SiteDistributionStackParams {
 export class SiteDistributionStack extends cdk.Stack {
 
     siteDistribution: cf.Distribution
-    siteBucketOrigin: cf_origins.S3Origin
 
     constructor(scope: Construct, id: string, param: SiteDistributionStackParams, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        // distribution
-        this.siteBucketOrigin = new cf_origins.S3Origin(param.siteBucket, {
+        // Distribution - Site Origin
+        const siteBucketOrigin = new cf_origins.S3Origin(param.siteBucket, {
             originShieldEnabled: true,
             originShieldRegion: 'us-east-1'
         });
+
+        // Distribution - Response Header
+        const siteCustomResponse = new cf.ResponseHeadersPolicy(this, 'custom-response-header', {
+            responseHeadersPolicyName: `${param.domainName.replace('.', '-')}-dist`,
+            comment: 'security',
+            securityHeadersBehavior: {
+                strictTransportSecurity: {
+                    override: true,
+                    preload: true,
+                    includeSubdomains: true,
+                    accessControlMaxAge: cdk.Duration.days(730) // 2 years
+                }
+            }
+        })
+
+        // Distribution - Response Header
+        const siteCustomErrorResponse = [
+            {
+                httpStatus: 404,
+                responseHttpStatus: 404,
+                responsePagePath: '/error.html',
+                ttl: cdk.Duration.days(1)
+            },
+            {
+                httpStatus: 403,
+                responseHttpStatus: 403,
+                responsePagePath: '/error.html',
+                ttl: cdk.Duration.days(1)
+            }
+        ]
+
+        // Distribution
         this.siteDistribution = new cf.Distribution(this, 'site-distribution', {
-            defaultBehavior: { origin: this.siteBucketOrigin },
+
             defaultRootObject: 'index.html',
-            domainNames: [`www.${param.domainName}`, param.domainName],
-            certificate: param.acmCertificate
+
+            defaultBehavior: {
+                origin: siteBucketOrigin,
+                cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+                allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+                responseHeadersPolicy: siteCustomResponse
+            },
+
+            domainNames: [
+                param.domainName,
+                `www.${param.domainName}`
+            ],
+            certificate: param.acmCertificate,
+
+            errorResponses: siteCustomErrorResponse
         });
 
+        // Record for Distribution
         new route53.ARecord(this, 'site-dist-domain-record', {
             zone: param.route53Zone,
-            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution))
+            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
+            deleteExisting: true
         });
 
         new route53.ARecord(this, 'site-dist-domain-record-www', {
             zone: param.route53Zone,
             recordName: 'www',
-            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution))
+            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
+            deleteExisting: true
         });
 
+        // Get CloudFront Domain Name on Output
         new cdk.CfnOutput(this, 'site-distribution-domain', {
             value: this.siteDistribution.domainName
         });
