@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
-import { Config } from './config';
+import { Config } from './site-config';
 import { SiteContentStack } from "../lib/site-content-stack";
 import { SiteDistributionStack } from "../lib/site-distribution-stack";
 import * as siteDomain from '../lib/site-domain-stacks'
