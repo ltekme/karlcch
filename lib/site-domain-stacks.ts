@@ -4,77 +4,45 @@ import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
-interface Domain { domainName: string }
+interface DomainInterface { domainName: string }
 
-interface SiteDomain_Route53_StackParam extends Domain { }
-export class SiteDomain_Route53_Stack extends cdk.NestedStack {
+interface Route53StackParam extends DomainInterface { }
+export class Route53Stack extends cdk.Stack {
 
     domainName: string
     zone: route53.HostedZone
 
-    constructor(scope: Construct, id: string, param: SiteDomain_Route53_StackParam, props: cdk.NestedStackProps) {
+    constructor(scope: Construct, id: string, param: Route53StackParam, props: cdk.StackProps) {
         super(scope, id, props);
 
         this.domainName = param.domainName;
 
-        this.zone = new route53.HostedZone(this, `${this.domainName.replace('.', '-')}-route53`, {
+        this.zone = new route53.HostedZone(this, `hosted-zone`, {
             zoneName: this.domainName
         });
+        this.zone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN)
 
     }
 }
 
 
-interface SiteDomain_ACM_StackParam extends Domain { route53Zone: route53.HostedZone }
-export class SiteDomain_ACM_Stack extends cdk.NestedStack {
+interface ACMStackParam extends DomainInterface { route53Zone: route53.HostedZone }
+export class ACMStack extends cdk.Stack {
 
     domainName: string
     certificate: acm.Certificate
 
-    constructor(scope: Construct, id: string, param: SiteDomain_ACM_StackParam, props: cdk.NestedStackProps) {
+    constructor(scope: Construct, id: string, param: ACMStackParam, props: cdk.StackProps) {
         super(scope, id, props);
 
         this.domainName = param.domainName;
 
-        this.certificate = new acm.Certificate(this, `${this.domainName.replace('.', '-')}-acm`, {
+        this.certificate = new acm.Certificate(this, `certificate`, {
             domainName: this.domainName,
             subjectAlternativeNames: [`*.${this.domainName}`],
             certificateName: `${this.domainName} certificate`,
             validation: acm.CertificateValidation.fromDns(param.route53Zone)
         });
 
-    }
-}
-
-
-interface SiteDomainStackParam extends Domain { }
-export class SiteDomainStack extends cdk.Stack {
-
-    siteDomain_Route53_Stack: SiteDomain_Route53_Stack
-    siteDomain_ACM_Stack: SiteDomain_ACM_Stack
-
-    domainName: string
-
-    constructor(scope: Construct, id: string, param: SiteDomainStackParam, props: cdk.StackProps) {
-        super(scope, id, props);
-
-        this.domainName = param.domainName
-
-        this.siteDomain_Route53_Stack = new SiteDomain_Route53_Stack(this, `${id}-Route53`, {
-            domainName: this.domainName
-        }, {
-            description: `child stack for ${this.domainName} route53 Hosted Zone`,
-            removalPolicy: cdk.RemovalPolicy.DESTROY
-        });
-
-        this.siteDomain_ACM_Stack = new SiteDomain_ACM_Stack(this, `${id}-ACM`, {
-            domainName: this.domainName,
-            route53Zone: this.siteDomain_Route53_Stack.zone
-        }, {
-            description: `child stack for ${this.domainName} ACM`,
-            removalPolicy: cdk.RemovalPolicy.DESTROY
-        });
-
-        this.siteDomain_ACM_Stack.addDependency(this.siteDomain_Route53_Stack);
     }
 }

@@ -1,35 +1,57 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
+import { Config } from './config';
 import { SiteContentStack } from "../lib/site-content-stack";
 import { SiteDistributionStack } from "../lib/site-distribution-stack";
-import { SiteDomainStack } from "../lib/site-domain-stacks";
+import * as siteDomain from '../lib/site-domain-stacks'
 
 const app = new cdk.App();
+const config = new Config();
 
-const siteContentStack = new SiteContentStack(app, "ltekme-SiteContentStack", {}, {
-    stackName: "ltekme-SiteContentStack",
-    description: "S3 static site store for ltek.me"
+// Tag all resource
+cdk.Tags.of(app).add("Created by", "CDK_CloudFormation");
+cdk.Tags.of(app).add("Project", config.domainName);
+
+
+
+const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {}, {
+    stackName: `${config.projectName}-SiteContentStack`,
+    description: `S3 static site store for ${config.domainName}`
 },);
 
-const siteDomainStack = new SiteDomainStack(app, "ltekme-SiteDomainStack", {
-    domainName: "dev-test.ltek.me"
+
+const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.projectName}-SiteDomain-Route53-Stack`, {
+    domainName: config.domainName
 }, {
-    stackName: "ltekme-SiteDomainStack",
-    description: "Master Stack for ltek.me domain"
+    stackName: `${config.projectName}-SiteDomain-Route53-Stack`,
+    description: `${config.domainName} route53 Hosted Zone`,
 });
 
-const siteDistributionStack = new SiteDistributionStack(app, "ltekme-SiteDistributionStack", {
-    domainName: "dev-test.ltek.me",
-    siteBucket: siteContentStack.bucket,
-    acmCertificate: siteDomainStack.siteDomain_ACM_Stack.certificate,
-    route53Zone: siteDomainStack.siteDomain_Route53_Stack.zone
+
+
+const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}-SiteDomain-ACM-Stack`, {
+    domainName: config.domainName,
+    route53Zone: siteDomain_Route53_Stack.zone
 }, {
-    stackName: "ltekme-SiteDistributionStack",
-    description: "CloudFront Distribution for ltek.me"
+    stackName: `${config.projectName}-SiteDomain-ACM-Stack`,
+    description: `${config.domainName} ACM Certificate`,
+});
+siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
+
+
+
+const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
+    domainName: config.domainName,
+    siteBucket: siteContentStack.bucket,
+    acmCertificate: siteDomain_ACM_Stack.certificate,
+    route53Zone: siteDomain_Route53_Stack.zone
+}, {
+    stackName: `${config.projectName}-SiteDistributionStack`,
+    description: `CloudFront Distribution for ${config.domainName}`
 },);
-
-
 siteDistributionStack.addDependency(siteContentStack);
-siteDistributionStack.addDependency(siteDomainStack);
+siteDistributionStack.addDependency(siteDomain_Route53_Stack);
+siteDistributionStack.addDependency(siteDomain_ACM_Stack);
+
 
 app.synth();
