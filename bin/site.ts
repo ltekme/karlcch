@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import { Config } from './site-config';
-import { SiteContentStack } from "../lib/site-content-stack";
-import { SiteDistributionStack } from "../lib/site-distribution-stack";
-import * as siteDomain from '../lib/site-domain-stacks'
+import { SiteContentStack } from "../lib/root/site-content-stack";
+import { SiteDistributionStack } from "../lib/root/site-distribution-stack";
+import * as siteDomain from '../lib/root/site-domain-stacks'
 
 const app = new cdk.App();
 const config = new Config();
 
 // Tag all resource
 cdk.Tags.of(app).add("Created by", "CDK_CloudFormation");
-cdk.Tags.of(app).add("Project", config.domainName);
-
-
+cdk.Tags.of(app).add("Project", config.projectName);
 
 const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {}, {
     stackName: `${config.projectName}-SiteContentStack`,
@@ -28,7 +26,6 @@ const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.proj
 });
 
 
-
 const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}-SiteDomain-ACM-Stack`, {
     domainName: config.domainName,
     route53Zone: siteDomain_Route53_Stack.zone
@@ -37,7 +34,6 @@ const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}
     description: `${config.domainName} ACM Certificate`,
 });
 siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
-
 
 
 const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
