@@ -1,5 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 
+export interface SubProjectParam {
+    parentProjectName: string,
+    projectName: string
+}
 export class SubProject {
 
     projectName: string;
@@ -7,20 +11,15 @@ export class SubProject {
     app: cdk.App;
     stackPrefix: string;
 
-    constructor(app: cdk.App, parentProjectName: string, projectName: string) {
+    constructor(app: cdk.App, param: SubProjectParam) {
         this.app = app;
-        this.parentProjectName = parentProjectName;
-        this.projectName = projectName;
-        this.stackPrefix = parentProjectName + "-" + projectName
+        this.parentProjectName = param.parentProjectName;
+        this.projectName = param.projectName;
+        this.stackPrefix = param.parentProjectName + "-" + param.projectName
     }
 
 }
 
-
-export interface SubProjectStack {
-    parentProjectName: string,
-    projectName: string
-}
 
 export class SubProjectStack extends cdk.Stack {
     constructor(subProject: SubProject, id: string, props: cdk.StackProps) {

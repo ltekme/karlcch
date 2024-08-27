@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import { Config } from './site-config';
-import { SiteContentStack } from "../lib/root/site-content-stack";
-import { SiteDistributionStack } from "../lib/root/site-distribution-stack";
-import * as siteDomain from '../lib/root/site-domain-stacks'
+
+import { SiteContentStack } from "../lib/site/site-content-stack";
+import { SiteDistributionStack } from "../lib/site/site-distribution-stack";
+import * as siteDomain from '../lib/site/site-domain-stacks'
+
+import { MotdSubProject } from "../lib/site-motd/site-motd-project";
+
 
 const app = new cdk.App();
 const config = new Config();
@@ -34,6 +38,12 @@ const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}
     description: `${config.domainName} ACM Certificate`,
 });
 siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
+
+
+const motdSubProject = new MotdSubProject(app, {
+    parentProjectName: config.projectName,
+    projectName: "siteMotd"
+});
 
 
 const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
