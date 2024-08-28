@@ -13,7 +13,7 @@ const app = new cdk.App();
 const config = new Config();
 
 // Tag all resource
-cdk.Tags.of(app).add("Created by", "CDK_CloudFormation");
+cdk.Tags.of(app).add("Created-by", "CDK_CloudFormation");
 cdk.Tags.of(app).add("Project", config.projectName);
 
 const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {}, {

@@ -4,7 +4,6 @@ import { Construct } from 'constructs';
 
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3_deploy from 'aws-cdk-lib/aws-s3-deployment';
-
 interface SiteContentStackParam { }
 
 export class SiteContentStack extends cdk.Stack {
@@ -18,7 +17,7 @@ export class SiteContentStack extends cdk.Stack {
         this.bucket = new s3.Bucket(this, "site-bucket", {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            autoDeleteObjects: true
+            autoDeleteObjects: true,
         });
 
         this.bucekt_contents = new s3_deploy.BucketDeployment(this, 'site-bucket-content', {
