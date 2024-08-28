@@ -8,6 +8,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 
 import { SubProject, SubProjectStack } from "../..";
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as lambda_nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 
 export class SiteMotdStack extends SubProjectStack {
 
@@ -18,26 +19,22 @@ export class SiteMotdStack extends SubProjectStack {
     constructor(subProject: SubProject, id: string, props: cdk.StackProps) {
         super(subProject, id, props);
 
+        // Lambda Function - Log Group
         this.motdUpdateLambdaFunctionLogGroup = new logs.LogGroup(this, 'motd-update-Function-LogGroup', {
-            logGroupName: '/aws/lambda/site-motd-update-Function',
-            retention: logs.RetentionDays.THREE_DAYS
+            retention: logs.RetentionDays.THREE_DAYS,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
         });
+        // Lambda Function
         this.motdUpdateLambdaFunction = new lambda.Function(this, 'motd-update-Function', {
-            functionName: 'site-motd-update-Function',
-            runtime: lambda.Runtime.NODEJS_18_X,
-            handler: 'index.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
-            logGroup: this.motdUpdateLambdaFunctionLogGroup
-        });
-        this.motdUpdateLambdaFunction.role?.attachInlinePolicy(new iam.Policy(this, 'motd-update-function-cloudwatch-permission', {
-            statements: [
-                new iam.PolicyStatement({
-                    actions: ["logs:PutLogEvents", "logs:CreateLogStream"],
-                    resources: [`${this.motdUpdateLambdaFunctionLogGroup.logGroupArn}/*`]
-                })
-            ]
-        }));
+            runtime: lambda.Runtime.PYTHON_3_12,
+            architecture: lambda.Architecture.ARM_64,
 
+            handler: 'main.lambda_handler',
+            code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
+
+            loggingFormat: lambda.LoggingFormat.TEXT,
+            logGroup: this.motdUpdateLambdaFunctionLogGroup,
+        });
 
         // APi Gateway
         this.testRestAPIGateway = new apigw.RestApi(this, 'test-api', {
