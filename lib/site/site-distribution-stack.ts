@@ -30,8 +30,6 @@ export class SiteDistributionStack extends cdk.Stack {
 
         // Distribution - Response Header
         const siteCustomResponse = new cf.ResponseHeadersPolicy(this, 'custom-response-header', {
-            responseHeadersPolicyName: `${param.domainName.replace('.', '-')}-dist`,
-            comment: 'security',
             securityHeadersBehavior: {
                 strictTransportSecurity: {
                     override: true,
