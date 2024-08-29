@@ -14,8 +14,10 @@ response = {
 
 def lambda_handler(event, context):
 
-    if "queryStringParameters" in event:
-        if event['queryStringParameters'].get('throw') is not None:
+    print(event)
+
+    if 'queryStringParameters' in event and event['queryStringParameters'] is not None:
+        if event['queryStringParameters'].get('raise') == 'yes':
             raise Exception('manual exacption triggered')
 
     qoute = bedrock.get_qoute()

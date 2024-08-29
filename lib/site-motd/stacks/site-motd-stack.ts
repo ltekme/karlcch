@@ -12,6 +12,7 @@ import * as cloudwatch_action from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as eventbridge from 'aws-cdk-lib/aws-events';
 import * as eventbridge_targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export interface SiteMotdStackParam {
     notifyErrorsEmails: string[]
@@ -20,11 +21,11 @@ export interface SiteMotdStackParam {
 export class SiteMotdStack extends SubProjectStack {
 
     motdUpdateLambda: lambda.Function;
-    motdUpdateScheduleRule: eventbridge.Rule;
-    motdUpdateLogGroup: logs.LogGroup;
-    motdUpdateLogGroupErrorMetric: logs.MetricFilter;
-    motdUpdateLogGroupErrorMetricAlarm: cloudwatch.Alarm;
-    motdUpdateErrorSNSTopic: sns.Topic;
+    motdUpdateLambdaScheduleRule: eventbridge.Rule;
+    motdUpdateLambdaLogGroup: logs.LogGroup;
+    motdUpdateLambdaLogGroupErrorMetric: logs.MetricFilter;
+    motdUpdateLambdaLogGroupErrorMetricAlarm: cloudwatch.Alarm;
+    motdUpdateLambdaErrorSNSTopic: sns.Topic;
 
     // testing
     testRestAPIGateway: apigw.RestApi;
@@ -46,43 +47,51 @@ export class SiteMotdStack extends SubProjectStack {
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
 
-            // environment: {
-            //     MOTD_DYNAMODB_TABLE_ARN: '',
-            //     FAILED_UPDATE_SNS_ARN: ''
-            // }
         });
 
+        // Lambda Function - Invoke Bedrock Permission
+        this.motdUpdateLambda.role?.attachInlinePolicy(new iam.Policy(this, 'motd-update-Function-bedrock-permission', {
+            policyName: "allow-bedrock-invoke",
+            statements: [
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ["bedrock:InvokeModel"],
+                    resources: [`arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`]
+                }),
+            ]
+        }));
+
         // Lambda Function - Log group
-        this.motdUpdateLogGroup = new logs.LogGroup(this, 'motd-update-Function-LogGroup', {
+        this.motdUpdateLambdaLogGroup = new logs.LogGroup(this, 'motd-update-Function-LogGroup', {
             logGroupName: `/aws/lambda/${this.motdUpdateLambda.functionName}`,
             retention: logs.RetentionDays.ONE_DAY,
             removalPolicy: cdk.RemovalPolicy.DESTROY
         });
 
         // Lambda Function - Log group - Error Metric
-        this.motdUpdateLogGroupErrorMetric = new logs.MetricFilter(this, 'motd-update-Function-Error-Metric', {
-            logGroup: this.motdUpdateLogGroup,
+        this.motdUpdateLambdaLogGroupErrorMetric = new logs.MetricFilter(this, 'motd-update-Function-Error-Metric', {
+            logGroup: this.motdUpdateLambdaLogGroup,
             metricNamespace: 'mots-lambda-function',
             metricName: 'mots-lambda-function-errors',
             filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback'),
         });
 
         // Lambda Function - Log group - Error Metric - SNS Topic
-        this.motdUpdateErrorSNSTopic = new sns.Topic(this, 'motd-update-Function-Error-Metric-SNS-Topic');
+        this.motdUpdateLambdaErrorSNSTopic = new sns.Topic(this, 'motd-update-Function-Error-Metric-SNS-Topic');
 
         // Lambda Function - Log group - Error Metric - SNS Topic - Subscriptions
         params.notifyErrorsEmails.forEach((email) => {
             new sns.Subscription(this, `error-notify-sns-sub-${email.replace('.', '-')}`, {
-                topic: this.motdUpdateErrorSNSTopic,
+                topic: this.motdUpdateLambdaErrorSNSTopic,
                 endpoint: email,
                 protocol: sns.SubscriptionProtocol.EMAIL
             });
         });
 
         // Lambda Function - Log group - Error Metric - Alarm
-        this.motdUpdateLogGroupErrorMetricAlarm = new cloudwatch.Alarm(this, 'motd-update-Function-Error-Metric-Alarm', {
-            metric: this.motdUpdateLogGroupErrorMetric.metric({
-                period: cdk.Duration.minutes(3) // Period must be 10, 30 or a multiple of 60 for alarm
+        this.motdUpdateLambdaLogGroupErrorMetricAlarm = new cloudwatch.Alarm(this, 'motd-update-Function-Error-Metric-Alarm', {
+            metric: this.motdUpdateLambdaLogGroupErrorMetric.metric({
+                period: cdk.Duration.minutes(1) // Period must be 10, 30 or a multiple of 60 for alarm
             }),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             threshold: 0,
@@ -90,16 +99,16 @@ export class SiteMotdStack extends SubProjectStack {
             actionsEnabled: true,
             treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING
         });
-        this.motdUpdateLogGroupErrorMetricAlarm.addAlarmAction(new cloudwatch_action.SnsAction(this.motdUpdateErrorSNSTopic));
+        this.motdUpdateLambdaLogGroupErrorMetricAlarm.addAlarmAction(new cloudwatch_action.SnsAction(this.motdUpdateLambdaErrorSNSTopic));
 
         // Scheduled event
-        this.motdUpdateScheduleRule = new eventbridge.Rule(this, 'motd-update-Function-Schedule-Rule', {
-            schedule: eventbridge.Schedule.rate(cdk.Duration.minutes(1)),
-            description: "run every minute",
+        this.motdUpdateLambdaScheduleRule = new eventbridge.Rule(this, 'motd-update-Function-Schedule-Rule', {
+            schedule: eventbridge.Schedule.rate(cdk.Duration.days(1)),
+            description: "schedule for motd update lambda function",
             targets: [new eventbridge_targets.LambdaFunction(this.motdUpdateLambda, {
                 retryAttempts: 2
             })]
-        })
+        });
 
 
 
