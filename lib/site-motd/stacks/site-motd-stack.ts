@@ -64,7 +64,6 @@ export class SiteMotdStack extends SubProjectStack {
             metricNamespace: 'mots-lambda-function',
             metricName: 'mots-lambda-function-errors',
             filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback'),
-
         });
 
         // Lambda Function - Log group - Error Metric - SNS Topic
@@ -82,12 +81,13 @@ export class SiteMotdStack extends SubProjectStack {
         // Lambda Function - Log group - Error Metric - Alarm
         this.motdUpdateLogGroupErrorMetricAlarm = new cloudwatch.Alarm(this, 'motd-update-Function-Error-Metric-Alarm', {
             metric: this.motdUpdateLogGroupErrorMetric.metric({
-                period: cdk.Duration.seconds(5)
+                period: cdk.Duration.seconds(30) // Period must be 10, 30 or a multiple of 60 for alarm
             }),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             threshold: 0,
             evaluationPeriods: 1,
-            actionsEnabled: true
+            actionsEnabled: true,
+            treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING
         });
         this.motdUpdateLogGroupErrorMetricAlarm.addAlarmAction(new cloudwatch_action.SnsAction(this.motdUpdateErrorSNSTopic));
 
