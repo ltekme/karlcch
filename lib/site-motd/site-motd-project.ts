@@ -3,7 +3,9 @@ import { SubProject, SubProjectParam, SubProjectStack } from '..';
 import { SiteMotdStack } from './stacks/site-motd-stack';
 
 
-interface MotdSubProjectParam extends SubProjectParam { }
+interface MotdSubProjectParam extends SubProjectParam {
+    notifyErrorsEmails: string[]
+}
 
 export class MotdSubProject extends SubProject {
 
@@ -13,6 +15,8 @@ export class MotdSubProject extends SubProject {
         super(app, params);
 
         this.siteMotdStack = new SiteMotdStack(this, this.stackPrefix + "-Stack", {
+            notifyErrorsEmails: params.notifyErrorsEmails
+        }, {
             stackName: this.stackPrefix + "-Stack",
             description: 'stack for site motd'
         });

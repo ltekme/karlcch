@@ -14,17 +14,11 @@ response = {
 
 def lambda_handler(event, context):
 
-    QOUTES_DYNAMODB_TABLE_ARN = os.environ["QOUTES_DYNAMODB_TABLE_ARN"]
-    FAILED_UPDATE_SNS_ARN = os.environ["FAILED_UPDATE_SNS_ARN"]
+    if "queryStringParameters" in event:
+        if event['queryStringParameters'].get('throw') is not None:
+            raise Exception('manual exacption triggered')
 
-    try:
-        qoute = bedrock.get_qoute()
-    except Exception as ex:
-        sns.publish_sns_notification(
-            topic_arn=QOUTES_DYNAMODB_TABLE_ARN,
-            subject="MOTD ERROR: error cannot get motd from bedrock",
-            message=ex
-        )
+    qoute = bedrock.get_qoute()
 
     response["body"] = json.dumps(qoute)
     return response

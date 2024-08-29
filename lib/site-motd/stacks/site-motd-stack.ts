@@ -7,26 +7,30 @@ import * as signer from 'aws-cdk-lib/aws-signer';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatch_action from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as eventbridge from 'aws-cdk-lib/aws-events';
+import * as sns from 'aws-cdk-lib/aws-sns';
 
+export interface SiteMotdStackParam {
+    notifyErrorsEmails: string[]
+}
 
 export class SiteMotdStack extends SubProjectStack {
 
     motdUpdate: lambda.Function;
+    motdUpdateScheduleRule: eventbridge.Rule;
     motdUpdateLogGroup: logs.LogGroup;
-    motdUpdateScheduleRule: eventbridge.Rule
+    motdUpdateLogGroupErrorMetric: logs.MetricFilter;
+    motdUpdateLogGroupErrorMetricAlarm: cloudwatch.Alarm;
+    motdUpdateErrorSNSTopic: sns.Topic;
 
     // testing
     testRestAPIGateway: apigw.RestApi;
 
-    constructor(subProject: SubProject, id: string, props: cdk.StackProps) {
+    constructor(subProject: SubProject, id: string, params: SiteMotdStackParam, props: cdk.StackProps) {
         super(subProject, id, props);
 
-        // Lambda Function - Log Group
-        this.motdUpdateLogGroup = new logs.LogGroup(this, 'motd-update-Function-LogGroup', {
-            retention: logs.RetentionDays.THREE_DAYS,
-            removalPolicy: cdk.RemovalPolicy.DESTROY
-        });
         // Lambda Function
         this.motdUpdate = new lambda.Function(this, 'motd-update-Function', {
             codeSigningConfig: new lambda.CodeSigningConfig(this, 'motd-update-CodeSigningConfig', {
@@ -41,54 +45,64 @@ export class SiteMotdStack extends SubProjectStack {
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
 
-            loggingFormat: lambda.LoggingFormat.TEXT,
-            logGroup: this.motdUpdateLogGroup,
+            // environment: {
+            //     MOTD_DYNAMODB_TABLE_ARN: '',
+            //     FAILED_UPDATE_SNS_ARN: ''
+            // }
         });
 
-        // Scheduled event
-        // this.motdUpdateSchedule = new eventbridge.Schedule(this, 'motd-update-Function-Schedule', {
-        //     scheduler: new ScheduleExpression
-        // })
+        // Lambda Function - Log group
+        this.motdUpdateLogGroup = new logs.LogGroup(this, 'motd-update-Function-LogGroup', {
+            logGroupName: `/aws/lambda/${this.motdUpdate.functionName}`,
+            retention: logs.RetentionDays.ONE_DAY,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
+        });
 
+        // Lambda Function - Log group - Error Metric
+        this.motdUpdateLogGroupErrorMetric = new logs.MetricFilter(this, 'motd-update-Function-Error-Metric', {
+            logGroup: this.motdUpdateLogGroup,
+            metricNamespace: 'mots-lambda-function',
+            metricName: 'mots-lambda-function-errors',
+            filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback'),
+
+        });
+
+        // Lambda Function - Log group - Error Metric - SNS Topic
+        this.motdUpdateErrorSNSTopic = new sns.Topic(this, 'motd-update-Function-Error-Metric-SNS-Topic');
+
+        // Lambda Function - Log group - Error Metric - SNS Topic - Subscriptions
+        params.notifyErrorsEmails.forEach((email) => {
+            new sns.Subscription(this, `error-notify-sns-sub-${email.replace('.', '-')}`, {
+                topic: this.motdUpdateErrorSNSTopic,
+                endpoint: email,
+                protocol: sns.SubscriptionProtocol.EMAIL
+            });
+        });
+
+        // Lambda Function - Log group - Error Metric - Alarm
+        this.motdUpdateLogGroupErrorMetricAlarm = new cloudwatch.Alarm(this, 'motd-update-Function-Error-Metric-Alarm', {
+            metric: this.motdUpdateLogGroupErrorMetric.metric({
+                period: cdk.Duration.seconds(5)
+            }),
+            comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            threshold: 0,
+            evaluationPeriods: 1,
+            actionsEnabled: true
+        });
+        this.motdUpdateLogGroupErrorMetricAlarm.addAlarmAction(new cloudwatch_action.SnsAction(this.motdUpdateErrorSNSTopic));
+
+
+
+
+
+
+
+
+        // Scheduled event
         this.motdUpdateScheduleRule = new eventbridge.Rule(this, 'motd-update-Function-Schedule-Rule', {
             schedule: eventbridge.Schedule.rate(cdk.Duration.minutes(1)),
             description: "run every minute"
         })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

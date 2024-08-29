@@ -42,7 +42,8 @@ siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
 
 const motdSubProject = new MotdSubProject(app, {
     parentProjectName: config.projectName,
-    projectName: "siteMotd"
+    projectName: "siteMotd",
+    notifyErrorsEmails: config.motdSubProjectNotifyEmails
 });
 
 
