@@ -1,11 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { SubProject, SubProjectParam, SubProjectStack } from '..';
-import { SiteMotdStack } from './stacks/site-motd-stack';
+import { SiteMotdStack, SiteMotdStackParam } from './stacks/site-motd-stack';
 
-
-interface MotdSubProjectParam extends SubProjectParam {
-    notifyErrorsEmails: string[]
-}
+interface MotdSubProjectParam extends SubProjectParam, SiteMotdStackParam { }
 
 export class MotdSubProject extends SubProject {
 
@@ -15,7 +12,8 @@ export class MotdSubProject extends SubProject {
         super(app, params);
 
         this.siteMotdStack = new SiteMotdStack(this, this.stackPrefix + "-Stack", {
-            notifyErrorsEmails: params.notifyErrorsEmails
+            notifyErrorsEmails: params.notifyErrorsEmails,
+            motdPageBucket: params.motdPageBucket,
         }, {
             stackName: this.stackPrefix + "-Stack",
             description: 'stack for site motd'

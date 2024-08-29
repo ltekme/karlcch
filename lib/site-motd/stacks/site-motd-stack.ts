@@ -13,9 +13,12 @@ import * as eventbridge from 'aws-cdk-lib/aws-events';
 import * as eventbridge_targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3'
+import { OAuthScope } from 'aws-cdk-lib/aws-cognito';
 
 export interface SiteMotdStackParam {
-    notifyErrorsEmails: string[]
+    notifyErrorsEmails: string[],
+    motdPageBucket: s3.Bucket,
 }
 
 export class SiteMotdStack extends SubProjectStack {
@@ -43,9 +46,14 @@ export class SiteMotdStack extends SubProjectStack {
 
             runtime: lambda.Runtime.PYTHON_3_12,
             architecture: lambda.Architecture.ARM_64,
+            timeout: cdk.Duration.minutes(0.5),
 
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
+
+            environment: {
+                MOTD_CONTENT_BUCKET: params.motdPageBucket.bucketName
+            },
 
         });
 
@@ -58,7 +66,30 @@ export class SiteMotdStack extends SubProjectStack {
                     actions: ["bedrock:InvokeModel"],
                     resources: [`arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`]
                 }),
-            ]
+            ],
+        }));
+
+        // Lambda Function - Bucket Permission
+        this.motdUpdateLambda.role?.attachInlinePolicy(new iam.Policy(this, 'motd-update-Function-bucket-permission', {
+            policyName: 'allow-bucket-write',
+            statements: [
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['s3:PutObject'],
+                    resources: [`${params.motdPageBucket.bucketArn}/motd/index.html`]
+                }),
+            ],
+        }));
+
+        // Lambda Function - Bucket Policy
+        // new object to work around dependency issue
+        new s3.BucketPolicy(this, 'motd-site-content-bucket-policy', {
+            bucket: params.motdPageBucket
+        }).document.addStatements(new iam.PolicyStatement({
+            principals: [new iam.ArnPrincipal(this.motdUpdateLambda.role?.roleArn!)],
+            effect: iam.Effect.ALLOW,
+            actions: ['s3:PutObject'],
+            resources: [`${params.motdPageBucket.bucketArn}/motd/index.html`]
         }));
 
         // Lambda Function - Log group
@@ -73,7 +104,7 @@ export class SiteMotdStack extends SubProjectStack {
             logGroup: this.motdUpdateLambdaLogGroup,
             metricNamespace: 'mots-lambda-function',
             metricName: 'mots-lambda-function-errors',
-            filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback'),
+            filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback', 'Status: timeout'),
         });
 
         // Lambda Function - Log group - Error Metric - SNS Topic
@@ -109,6 +140,7 @@ export class SiteMotdStack extends SubProjectStack {
                 retryAttempts: 2
             })]
         });
+
 
 
 
