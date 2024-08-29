@@ -81,7 +81,7 @@ export class SiteMotdStack extends SubProjectStack {
         // Lambda Function - Log group - Error Metric - Alarm
         this.motdUpdateLogGroupErrorMetricAlarm = new cloudwatch.Alarm(this, 'motd-update-Function-Error-Metric-Alarm', {
             metric: this.motdUpdateLogGroupErrorMetric.metric({
-                period: cdk.Duration.seconds(30) // Period must be 10, 30 or a multiple of 60 for alarm
+                period: cdk.Duration.minutes(1) // Period must be 10, 30 or a multiple of 60 for alarm
             }),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             threshold: 0,
