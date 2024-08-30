@@ -65,7 +65,10 @@ export class MotdUpdate {
             principals: [new iam.ArnPrincipal(this.lambdaFunction.role?.roleArn!)],
             effect: iam.Effect.ALLOW,
             actions: ['s3:PutObject'],
-            resources: [`${param.bucket.bucketArn}/motd/index.html`]
+            resources: [
+                `${param.bucket.bucketArn}/motd/index.html`,
+                `${param.bucket.bucketArn}/sitemap.xml`
+            ]
         }));
 
         // Lambda Function - Log group
@@ -98,7 +101,7 @@ export class MotdUpdate {
         // Lambda Function - Log group - Error Metric - Alarm
         this.lambdaFunctionLogGroupErrorMetricAlarm = new cloudwatch.Alarm(scope, 'Lambda Function Error Metric Alarm', {
             metric: this.lambdaFunctionLogGroupErrorMetric.metric({
-                period: cdk.Duration.minutes(1) // Period must be 10, 30 or a multiple of 60 for alarm
+                period: cdk.Duration.minutes(5) // Period must be 10, 30 or a multiple of 60 for alarm
             }),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             threshold: 0,
@@ -110,7 +113,7 @@ export class MotdUpdate {
 
         // Scheduled event
         this.lambdaFunctionScheduleRule = new eventbridge.Rule(scope, 'Scheduled Lambda Execution Rule', {
-            schedule: eventbridge.Schedule.rate(cdk.Duration.minutes(5)),
+            schedule: eventbridge.Schedule.rate(cdk.Duration.hours(1)),
             description: "schedule for motd update lambda function",
             targets: [new eventbridge_targets.LambdaFunction(this.lambdaFunction, {
                 retryAttempts: 2
