@@ -4,14 +4,16 @@ import { Construct } from 'constructs';
 
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3_deploy from 'aws-cdk-lib/aws-s3-deployment';
+import { MotdUpdate, MotdUpdateErrorsNotifyEmails } from '../site-motd/site-motd';
 
 
-interface SiteContentStackParam { }
-
+interface SiteContentStackParam extends MotdUpdateErrorsNotifyEmails { }
 export class SiteContentStack extends cdk.Stack {
 
     bucket: s3.Bucket;
-    bucekt_contents: s3_deploy.BucketDeployment
+    bucekt_contents: s3_deploy.BucketDeployment;
+
+    motdUpdate: MotdUpdate;
 
     constructor(scope: Construct, id: string, param: SiteContentStackParam, props?: cdk.StackProps) {
         super(scope, id, props);
@@ -28,6 +30,10 @@ export class SiteContentStack extends cdk.Stack {
             extract: true
         });
 
+        this.motdUpdate = new MotdUpdate(this, {
+            bucket: this.bucket,
+            errorsNotifyEmails: param.errorsNotifyEmails
+        });
     }
 
 }

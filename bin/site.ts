@@ -6,7 +6,7 @@ import { SiteContentStack } from "../lib/site/site-content-stack";
 import { SiteDistributionStack } from "../lib/site/site-distribution-stack";
 import * as siteDomain from '../lib/site/site-domain-stacks'
 
-import { MotdSubProject } from "../lib/site-motd/site-motd-project";
+// import { MotdSubProject } from "../lib/site-motd/site-motd-lambda";
 
 
 const app = new cdk.App();
@@ -16,7 +16,9 @@ const config = new Config();
 cdk.Tags.of(app).add("Created-by", "CDK_CloudFormation");
 cdk.Tags.of(app).add("Project", config.projectName);
 
-const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {}, {
+const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {
+    errorsNotifyEmails: config.motdSubProjectNotifyEmails
+}, {
     stackName: `${config.projectName}-SiteContentStack`,
     description: `S3 static site store for ${config.domainName}`
 },);
@@ -40,12 +42,12 @@ const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}
 siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
 
 
-const motdSubProject = new MotdSubProject(app, {
-    parentProjectName: config.projectName,
-    projectName: "siteMotd",
-    notifyErrorsEmails: config.motdSubProjectNotifyEmails,
-    motdPageBucket: siteContentStack.bucket
-});
+// const motdSubProject = new MotdSubProject(app, {
+//     parentProjectName: config.projectName,
+//     projectName: "siteMotd",
+//     notifyErrorsEmails: config.motdSubProjectNotifyEmails,
+//     motdPageBucket: siteContentStack.bucket
+// });
 
 
 const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
