@@ -6,9 +6,6 @@ import { SiteContentStack } from "../lib/site/site-content-stack";
 import { SiteDistributionStack } from "../lib/site/site-distribution-stack";
 import * as siteDomain from '../lib/site/site-domain-stacks'
 
-// import { MotdSubProject } from "../lib/site-motd/site-motd-lambda";
-
-
 const app = new cdk.App();
 const config = new Config();
 
@@ -21,10 +18,10 @@ const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteCo
 }, {
     stackName: `${config.projectName}-SiteContentStack`,
     description: `S3 static site store for ${config.domainName}`,
-    env: {
+    env: { // Set Region For CloudFront Lambda @ Edge
         region: config.region,
     }
-},);
+});
 
 
 const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.projectName}-SiteDomain-Route53-Stack`, {
@@ -32,7 +29,7 @@ const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.proj
 }, {
     stackName: `${config.projectName}-SiteDomain-Route53-Stack`,
     description: `${config.domainName} route53 Hosted Zone`,
-    env: {
+    env: { // Set Region For CloudFront Lambda @ Edge
         region: config.region,
     }
 });
@@ -44,19 +41,11 @@ const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}
 }, {
     stackName: `${config.projectName}-SiteDomain-ACM-Stack`,
     description: `${config.domainName} ACM Certificate`,
-    env: {
+    env: { // Set Region For CloudFront Lambda @ Edge
         region: config.region,
     }
 });
 siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
-
-
-// const motdSubProject = new MotdSubProject(app, {
-//     parentProjectName: config.projectName,
-//     projectName: "siteMotd",
-//     notifyErrorsEmails: config.motdSubProjectNotifyEmails,
-//     motdPageBucket: siteContentStack.bucket
-// });
 
 
 const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {

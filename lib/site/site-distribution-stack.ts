@@ -26,7 +26,7 @@ export class SiteDistributionStack extends cdk.Stack {
         super(scope, id, props);
 
         // Distribution - Trialing path root document append
-        this.defualtObjectRewrite = new cf.experimental.EdgeFunction(this, 'default-object-http-rewrite-edge-function', {
+        this.defualtObjectRewrite = new cf.experimental.EdgeFunction(this, 'HTTP Rewrite Default Document Fn', {
             runtime: lambda.Runtime.NODEJS_LATEST,
             handler: 'index.handler',
             code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda'))
@@ -39,7 +39,7 @@ export class SiteDistributionStack extends cdk.Stack {
         });
 
         // Distribution - Response Header
-        const siteCustomResponse = new cf.ResponseHeadersPolicy(this, 'custom-response-header', {
+        const siteCustomResponse = new cf.ResponseHeadersPolicy(this, 'Custom Security Response Header', {
             securityHeadersBehavior: {
                 strictTransportSecurity: {
                     override: true,
@@ -51,7 +51,7 @@ export class SiteDistributionStack extends cdk.Stack {
         })
 
         // Distribution
-        this.siteDistribution = new cf.Distribution(this, 'site-distribution', {
+        this.siteDistribution = new cf.Distribution(this, 'Site CloudFront Distribution', {
 
             defaultRootObject: 'index.html',
 
@@ -59,22 +59,22 @@ export class SiteDistributionStack extends cdk.Stack {
                 origin: siteBucketOrigin,
                 cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
                 allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-                responseHeadersPolicy: siteCustomResponse
+                responseHeadersPolicy: siteCustomResponse,
             },
 
             additionalBehaviors: {
                 '/motd*': {
                     origin: siteBucketOrigin,
+                    cachePolicy: new cf.CachePolicy(this, 'Motd Chaching Policy', {
+                        defaultTtl: cdk.Duration.minutes(5),
+                        minTtl: cdk.Duration.minutes(5),
+                    }),
                     edgeLambdas: [
                         {
                             functionVersion: this.defualtObjectRewrite.currentVersion,
                             eventType: cf.LambdaEdgeEventType.ORIGIN_REQUEST
                         }
                     ],
-                    cachePolicy: new cf.CachePolicy(this, 'motd cache policy', {
-                        defaultTtl: cdk.Duration.minutes(5),
-                        minTtl: cdk.Duration.minutes(5),
-                    }),
                     cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
                     allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
                     responseHeadersPolicy: siteCustomResponse,
@@ -105,13 +105,13 @@ export class SiteDistributionStack extends cdk.Stack {
         });
 
         // Record for Distribution
-        new route53.ARecord(this, 'site-dist-domain-record', {
+        new route53.ARecord(this, 'CloudFront Domain Alias Route 53 Record', {
             zone: param.route53Zone,
             target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
             deleteExisting: true
         });
 
-        new route53.ARecord(this, 'site-dist-domain-record-www', {
+        new route53.ARecord(this, 'CloudFront Domain Alias Route 53 Record - WWW', {
             zone: param.route53Zone,
             recordName: 'www',
             target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
@@ -119,8 +119,8 @@ export class SiteDistributionStack extends cdk.Stack {
         });
 
         // Get CloudFront Domain Name on Output
-        new cdk.CfnOutput(this, 'site-distribution-domain', {
-            value: this.siteDistribution.domainName
+        new cdk.CfnOutput(this, 'CloudFront Distribution URL', {
+            value: `https://${this.siteDistribution.domainName}`
         });
 
     }

@@ -18,13 +18,13 @@ export class SiteContentStack extends cdk.Stack {
     constructor(scope: Construct, id: string, param: SiteContentStackParam, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        this.bucket = new s3.Bucket(this, "site-bucket", {
+        this.bucket = new s3.Bucket(this, "Website Content Bucket", {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             autoDeleteObjects: true,
         });
 
-        this.bucekt_contents = new s3_deploy.BucketDeployment(this, 'site-bucket-content', {
+        this.bucekt_contents = new s3_deploy.BucketDeployment(this, 'Website Content Bucket - Contents', {
             destinationBucket: this.bucket,
             sources: [s3_deploy.Source.asset(path.join(__dirname, 'site_content'))],
             extract: true
@@ -34,6 +34,7 @@ export class SiteContentStack extends cdk.Stack {
             bucket: this.bucket,
             errorsNotifyEmails: param.errorsNotifyEmails
         });
+        cdk.Tags.of(this.motdUpdate).add('Sub-Project', 'Site Motd');
     }
 
 }
