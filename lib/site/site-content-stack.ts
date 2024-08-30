@@ -34,7 +34,6 @@ export class SiteContentStack extends cdk.Stack {
             bucket: this.bucket,
             errorsNotifyEmails: param.errorsNotifyEmails
         });
-        cdk.Tags.of(this.motdUpdate).add('Sub-Project', 'Site Motd');
     }
 
 }

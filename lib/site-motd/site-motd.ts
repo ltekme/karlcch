@@ -1,7 +1,6 @@
 import path = require('path');
 
 import * as cdk from 'aws-cdk-lib';
-import * as signer from 'aws-cdk-lib/aws-signer';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -22,7 +21,7 @@ export interface MotdUpdateParam extends MotdUpdateErrorsNotifyEmails {
     bucket: s3.Bucket
 }
 
-export class MotdUpdate extends Construct {
+export class MotdUpdate {
 
     // motd update
     lambdaFunction: lambda.Function;
@@ -36,7 +35,6 @@ export class MotdUpdate extends Construct {
     testRestAPIGateway: apigw.RestApi;
 
     constructor(scope: cdk.Stack, param: MotdUpdateParam) {
-        super(scope, 'motd-project');
 
         // Lambda Function
         this.lambdaFunction = new lambda.Function(scope, 'Motd Update Lambda Function', {

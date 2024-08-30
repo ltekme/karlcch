@@ -29,7 +29,7 @@ export class SiteDistributionStack extends cdk.Stack {
         this.defualtObjectRewrite = new cf.experimental.EdgeFunction(this, 'HTTP Rewrite Default Document Fn', {
             runtime: lambda.Runtime.NODEJS_LATEST,
             handler: 'index.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda'))
+            code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda')),
         });
 
         // Distribution - Site Origin
