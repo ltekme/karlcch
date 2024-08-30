@@ -4,19 +4,13 @@ import json
 from botocore.exceptions import ClientError
 
 
-def get_qoute() -> dict:
+def get_qoute() -> str:
 
     client = boto3.client("bedrock-runtime")
     prompt = """You are an internet user with lots of wisdm to share. 
-Your job is to write a short positive message qoute to motive someone's day. 
-The output should follow the following json format.
+Your job is to write a short positive message qoute to motive someone's day.
 The qoute shoud not be longer then 24 words and should only contains words no hashtags.
-
-format: 
-{
-"qoute": "",
-"person": ""
-}
+The output should only contain the plain qoute text, nothing more
 
 output:"""
 
@@ -45,4 +39,4 @@ output:"""
     )
     model_response = json.loads(response["body"].read())
     response_text = model_response["content"][0]["text"]
-    return json.loads(response_text)
+    return response_text

@@ -20,11 +20,11 @@ def lambda_handler(event, context):
 
     MOTD_CONTENT_BUCKET = os.environ['MOTD_CONTENT_BUCKET']
     qoute = bedrock.get_qoute()
+    print(qoute)
 
     html = f'''<html>
 <body>
-<p>{qoute.get('quote')}</p>
-{f'<p>{qoute.get('person')}</p>' if qoute.get('person') != '' else '<p>--</p>'}
+<p>{qoute}</p>
 </body>
 </html>'''
 
@@ -35,5 +35,5 @@ def lambda_handler(event, context):
         body=html
     )
 
-    response["body"] = json.dumps(qoute)
+    response["body"] = json.dumps({'qoute': qoute})
     return response

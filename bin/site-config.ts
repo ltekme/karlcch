@@ -3,11 +3,12 @@ import path = require("path");
 export class Config {
     projectName: string = '';
     domainName: string = '';
+    region: string = 'us-east-1';
 
     route53ImportZoneFile: boolean = false;
     route53ImportZoneFileLocation: string = path.join(__dirname, 'zone_file.txt');
 
-    motdSubProjectNotifyEmails: string[]
+    motdSubProjectNotifyEmails: string[];
 
     constructor() {
         this.projectName = "ltekme";

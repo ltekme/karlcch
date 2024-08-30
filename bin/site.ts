@@ -20,7 +20,10 @@ const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteCo
     errorsNotifyEmails: config.motdSubProjectNotifyEmails
 }, {
     stackName: `${config.projectName}-SiteContentStack`,
-    description: `S3 static site store for ${config.domainName}`
+    description: `S3 static site store for ${config.domainName}`,
+    env: {
+        region: config.region,
+    }
 },);
 
 
@@ -29,6 +32,9 @@ const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.proj
 }, {
     stackName: `${config.projectName}-SiteDomain-Route53-Stack`,
     description: `${config.domainName} route53 Hosted Zone`,
+    env: {
+        region: config.region,
+    }
 });
 
 
@@ -38,6 +44,9 @@ const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}
 }, {
     stackName: `${config.projectName}-SiteDomain-ACM-Stack`,
     description: `${config.domainName} ACM Certificate`,
+    env: {
+        region: config.region,
+    }
 });
 siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
 
@@ -57,8 +66,11 @@ const siteDistributionStack = new SiteDistributionStack(app, `${config.projectNa
     route53Zone: siteDomain_Route53_Stack.zone
 }, {
     stackName: `${config.projectName}-SiteDistributionStack`,
-    description: `CloudFront Distribution for ${config.domainName}`
-},);
+    description: `CloudFront Distribution for ${config.domainName}`,
+    env: {
+        region: config.region,
+    }
+});
 siteDistributionStack.addDependency(siteContentStack);
 siteDistributionStack.addDependency(siteDomain_Route53_Stack);
 siteDistributionStack.addDependency(siteDomain_ACM_Stack);

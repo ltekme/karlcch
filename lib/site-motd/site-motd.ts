@@ -38,23 +38,14 @@ export class MotdUpdate {
 
         // Lambda Function
         this.lambdaFunction = new lambda.Function(scope, 'motd-update-Function', {
-            codeSigningConfig: new lambda.CodeSigningConfig(scope, 'motd-update-CodeSigningConfig', {
-                signingProfiles: [new signer.SigningProfile(scope, 'motd-update-SigningProfile', {
-                    platform: signer.Platform.AWS_LAMBDA_SHA384_ECDSA,
-                })],
-            }),
-
             runtime: lambda.Runtime.PYTHON_3_12,
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(0.5),
-
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
-
             environment: {
                 MOTD_CONTENT_BUCKET: param.bucket.bucketName
             },
-
         });
 
         // Lambda Function - Invoke Bedrock Permission
@@ -69,21 +60,7 @@ export class MotdUpdate {
             ],
         }));
 
-
-        // Lambda Function - Bucket Permission
-        // this.motdUpdateLambda.role?.attachInlinePolicy(new iam.Policy(this, 'motd-update-Function-bucket-permission', {
-        //     policyName: 'allow-bucket-write',
-        //     statements: [
-        //         new iam.PolicyStatement({
-        //             effect: iam.Effect.ALLOW,
-        //             actions: ['s3:PutObject'],
-        //             resources: [`${params.motdPageBucket.bucketArn}/motd/index.html`]
-        //         }),
-        //     ],
-        // }));
-
         // Lambda Function - Bucket Policy
-        // new object to work around dependency issue
         param.bucket.addToResourcePolicy(new iam.PolicyStatement({
             principals: [new iam.ArnPrincipal(this.lambdaFunction.role?.roleArn!)],
             effect: iam.Effect.ALLOW,
@@ -101,8 +78,8 @@ export class MotdUpdate {
         // Lambda Function - Log group - Error Metric
         this.lambdaFunctionLogGroupErrorMetric = new logs.MetricFilter(scope, 'motd-update-Function-Error-Metric', {
             logGroup: this.lambdaFunctionLogGroup,
-            metricNamespace: 'mots-lambda-function',
-            metricName: 'mots-lambda-function-errors',
+            metricNamespace: 'motd-lambda-function',
+            metricName: 'motd-lambda-function-errors',
             filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback', 'Status: timeout'),
         });
 
@@ -133,7 +110,7 @@ export class MotdUpdate {
 
         // Scheduled event
         this.lambdaFunctionScheduleRule = new eventbridge.Rule(scope, 'motd-update-Function-Schedule-Rule', {
-            schedule: eventbridge.Schedule.rate(cdk.Duration.days(1)),
+            schedule: eventbridge.Schedule.rate(cdk.Duration.minutes(5)),
             description: "schedule for motd update lambda function",
             targets: [new eventbridge_targets.LambdaFunction(this.lambdaFunction, {
                 retryAttempts: 2
