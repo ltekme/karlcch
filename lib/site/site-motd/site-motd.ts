@@ -31,7 +31,7 @@ export class MotdUpdate {
     lambdaFunctionErrorSNSTopic: sns.Topic;
 
     // testing
-    testRestAPIGateway: apigw.RestApi;
+    // testRestAPIGateway: apigw.RestApi;
 
     constructor(scope: cdk.Stack, param: MotdUpdateParam) {
 
@@ -39,7 +39,7 @@ export class MotdUpdate {
         this.lambdaFunction = new lambda.Function(scope, 'Motd Update Lambda Function', {
             runtime: lambda.Runtime.PYTHON_3_12,
             architecture: lambda.Architecture.ARM_64,
-            timeout: cdk.Duration.minutes(0.5),
+            timeout: cdk.Duration.seconds(30),
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
             environment: {
@@ -121,18 +121,18 @@ export class MotdUpdate {
         });
 
 
-        this.testRestAPIGateway = new apigw.RestApi(scope, 'Test Execute Lambda API', {
-            restApiName: 'test-api-for-lambda'
-        });
+        // this.testRestAPIGateway = new apigw.RestApi(scope, 'Test Execute Lambda API', {
+        //     restApiName: 'test-api-for-lambda'
+        // });
 
 
-        this.testRestAPIGateway.root.addMethod(
-            'GET',
-            new apigw.LambdaIntegration(this.lambdaFunction, {
-                allowTestInvoke: false,
-                timeout: cdk.Duration.seconds(29),
-            })
-        );
+        // this.testRestAPIGateway.root.addMethod(
+        //     'GET',
+        //     new apigw.LambdaIntegration(this.lambdaFunction, {
+        //         allowTestInvoke: false,
+        //         timeout: cdk.Duration.seconds(29),
+        //     })
+        // );
 
     }
 }

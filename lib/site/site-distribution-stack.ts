@@ -54,9 +54,9 @@ export class SiteDistributionStack extends cdk.Stack {
         }
 
         const motdCachePolicy = new cf.CachePolicy(this, 'Motd Chaching Policy', {
-            defaultTtl: cdk.Duration.hours(0),
-            maxTtl: cdk.Duration.hours(0),
-            minTtl: cdk.Duration.hours(0),
+            defaultTtl: cdk.Duration.hours(1),
+            maxTtl: cdk.Duration.hours(1),
+            minTtl: cdk.Duration.hours(1),
         })
 
         const motdCutsomBehaviour = {
