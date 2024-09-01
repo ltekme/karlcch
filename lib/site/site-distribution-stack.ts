@@ -10,11 +10,12 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 
-interface SiteDistributionStackParams {
+import * as I from '../interfaces'
+
+export interface SiteDistributionStackParams extends I.IDomainName {
     siteBucket: s3.Bucket,
     acmCertificate: acm.Certificate,
     route53Zone: route53.HostedZone,
-    domainName: string
 };
 
 export class SiteDistributionStack extends cdk.Stack {
@@ -32,52 +33,56 @@ export class SiteDistributionStack extends cdk.Stack {
             code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda')),
         });
 
-        // Distribution - Site Origin
-        const siteBucketOrigin = new cf_origins.S3Origin(param.siteBucket, {
-            originShieldEnabled: true,
-            originShieldRegion: 'us-east-1'
-        });
-
         // Distribution - Response Header
-        const siteCustomResponse = new cf.ResponseHeadersPolicy(this, 'Custom Security Response Header', {
-            securityHeadersBehavior: {
-                strictTransportSecurity: {
-                    override: true,
-                    preload: true,
-                    includeSubdomains: true,
-                    accessControlMaxAge: cdk.Duration.days(730) // 2 years
+        const contentBucketBehavoiur = {
+            origin: new cf_origins.S3Origin(param.siteBucket, {
+                originShieldEnabled: true,
+                originShieldRegion: 'us-east-1'
+            }),
+            cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+            allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+            responseHeadersPolicy: new cf.ResponseHeadersPolicy(this, 'Custom Security Response Header', {
+                securityHeadersBehavior: {
+                    strictTransportSecurity: {
+                        override: true,
+                        preload: true,
+                        includeSubdomains: true,
+                        accessControlMaxAge: cdk.Duration.days(730) // 2 years
+                    }
                 }
-            }
+            }),
+        }
+
+        const motdCachePolicy = new cf.CachePolicy(this, 'Motd Chaching Policy', {
+            defaultTtl: cdk.Duration.hours(0),
+            maxTtl: cdk.Duration.hours(0),
+            minTtl: cdk.Duration.hours(0),
         })
+
+        const motdCutsomBehaviour = {
+            ...contentBucketBehavoiur,
+            cachePolicy: motdCachePolicy,
+            edgeLambdas: [
+                {
+                    functionVersion: this.defualtObjectRewrite.currentVersion,
+                    eventType: cf.LambdaEdgeEventType.ORIGIN_REQUEST
+                }
+            ],
+        }
 
         // Distribution
         this.siteDistribution = new cf.Distribution(this, 'Site CloudFront Distribution', {
 
             defaultRootObject: 'index.html',
 
-            defaultBehavior: {
-                origin: siteBucketOrigin,
-                cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
-                allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-                responseHeadersPolicy: siteCustomResponse,
-            },
+            defaultBehavior: contentBucketBehavoiur,
 
             additionalBehaviors: {
-                '/motd*': {
-                    origin: siteBucketOrigin,
-                    cachePolicy: new cf.CachePolicy(this, 'Motd Chaching Policy', {
-                        defaultTtl: cdk.Duration.minutes(5),
-                        minTtl: cdk.Duration.minutes(5),
-                    }),
-                    edgeLambdas: [
-                        {
-                            functionVersion: this.defualtObjectRewrite.currentVersion,
-                            eventType: cf.LambdaEdgeEventType.ORIGIN_REQUEST
-                        }
-                    ],
-                    cachedMethods: cf.CachedMethods.CACHE_GET_HEAD_OPTIONS,
-                    allowedMethods: cf.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-                    responseHeadersPolicy: siteCustomResponse,
+                '/motd': motdCutsomBehaviour,
+                '/motd*': motdCutsomBehaviour,
+                '/sitemap.xml': {
+                    ...contentBucketBehavoiur,
+                    cachePolicy: motdCachePolicy,
                 }
             },
 

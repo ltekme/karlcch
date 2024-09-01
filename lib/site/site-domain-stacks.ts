@@ -4,9 +4,9 @@ import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
-interface DomainInterface { domainName: string }
+import * as I from '../interfaces';
 
-interface Route53StackParam extends DomainInterface { }
+interface Route53StackParam extends I.IDomainName { }
 export class Route53Stack extends cdk.Stack {
 
     domainName: string
@@ -26,7 +26,9 @@ export class Route53Stack extends cdk.Stack {
 }
 
 
-interface ACMStackParam extends DomainInterface { route53Zone: route53.HostedZone }
+interface ACMStackParam extends I.IDomainName {
+    route53Zone: route53.HostedZone
+}
 export class ACMStack extends cdk.Stack {
 
     domainName: string

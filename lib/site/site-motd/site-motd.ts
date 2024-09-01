@@ -11,16 +11,15 @@ import * as eventbridge_targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3'
-import { Construct } from 'constructs';
+
+import * as I from '../../interfaces'
 
 export interface MotdUpdateErrorsNotifyEmails {
     errorsNotifyEmails: string[]
 }
-
-export interface MotdUpdateParam extends MotdUpdateErrorsNotifyEmails {
+export interface MotdUpdateParam extends MotdUpdateErrorsNotifyEmails, I.IDomainName {
     bucket: s3.Bucket
 }
-
 export class MotdUpdate {
 
     // motd update
@@ -36,7 +35,7 @@ export class MotdUpdate {
 
     constructor(scope: cdk.Stack, param: MotdUpdateParam) {
 
-        // Lambda Function
+
         this.lambdaFunction = new lambda.Function(scope, 'Motd Update Lambda Function', {
             runtime: lambda.Runtime.PYTHON_3_12,
             architecture: lambda.Architecture.ARM_64,
@@ -44,12 +43,13 @@ export class MotdUpdate {
             handler: 'main.lambda_handler',
             code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
             environment: {
-                MOTD_CONTENT_BUCKET: param.bucket.bucketName
+                MOTD_CONTENT_BUCKET: param.bucket.bucketName,
+                DOMAIN_NAME: param.domainName
             },
         });
 
-        // Lambda Function - Invoke Bedrock Permission
-        this.lambdaFunction.role?.attachInlinePolicy(new iam.Policy(scope, 'Lambda Function Permission', {
+
+        this.lambdaFunction.role?.attachInlinePolicy!(new iam.Policy(scope, 'Lambda Function Permission', {
             policyName: "allow-bedrock-invoke",
             statements: [
                 new iam.PolicyStatement({
@@ -60,7 +60,7 @@ export class MotdUpdate {
             ],
         }));
 
-        // Lambda Function - Bucket Policy
+
         param.bucket.addToResourcePolicy(new iam.PolicyStatement({
             principals: [new iam.ArnPrincipal(this.lambdaFunction.role?.roleArn!)],
             effect: iam.Effect.ALLOW,
@@ -71,14 +71,14 @@ export class MotdUpdate {
             ]
         }));
 
-        // Lambda Function - Log group
+
         this.lambdaFunctionLogGroup = new logs.LogGroup(scope, 'Lambda Function Log Group', {
             logGroupName: `/aws/lambda/${this.lambdaFunction.functionName}`,
             retention: logs.RetentionDays.ONE_DAY,
             removalPolicy: cdk.RemovalPolicy.DESTROY
         });
 
-        // Lambda Function - Log group - Error Metric
+
         this.lambdaFunctionLogGroupErrorMetric = new logs.MetricFilter(scope, 'Lambda Function Error Metric', {
             logGroup: this.lambdaFunctionLogGroup,
             metricNamespace: 'motd-lambda-function',
@@ -86,10 +86,10 @@ export class MotdUpdate {
             filterPattern: logs.FilterPattern.anyTerm('ERROR', 'Error', 'Exception', 'Traceback', 'Status: timeout'),
         });
 
-        // Lambda Function - Log group - Error Metric - SNS Topic
+
         this.lambdaFunctionErrorSNSTopic = new sns.Topic(scope, 'Lambda Function Errors Notification SNS Topic');
 
-        // Lambda Function - Log group - Error Metric - SNS Topic - Subscriptions
+
         param.errorsNotifyEmails.forEach((email) => {
             new sns.Subscription(scope, `Lambda Function Errors ${email} Subscriber`, {
                 topic: this.lambdaFunctionErrorSNSTopic,
@@ -98,10 +98,10 @@ export class MotdUpdate {
             });
         });
 
-        // Lambda Function - Log group - Error Metric - Alarm
+
         this.lambdaFunctionLogGroupErrorMetricAlarm = new cloudwatch.Alarm(scope, 'Lambda Function Error Metric Alarm', {
             metric: this.lambdaFunctionLogGroupErrorMetric.metric({
-                period: cdk.Duration.minutes(5) // Period must be 10, 30 or a multiple of 60 for alarm
+                period: cdk.Duration.seconds(10) // Period must be 10, 30 or a multiple of 60 for alarm
             }),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             threshold: 0,
@@ -111,7 +111,7 @@ export class MotdUpdate {
         });
         this.lambdaFunctionLogGroupErrorMetricAlarm.addAlarmAction(new cloudwatch_action.SnsAction(this.lambdaFunctionErrorSNSTopic));
 
-        // Scheduled event
+
         this.lambdaFunctionScheduleRule = new eventbridge.Rule(scope, 'Scheduled Lambda Execution Rule', {
             schedule: eventbridge.Schedule.rate(cdk.Duration.hours(1)),
             description: "schedule for motd update lambda function",
@@ -120,17 +120,17 @@ export class MotdUpdate {
             })]
         });
 
-        // APi Gateway
+
         this.testRestAPIGateway = new apigw.RestApi(scope, 'Test Execute Lambda API', {
             restApiName: 'test-api-for-lambda'
         });
 
-        // APi Gateway - Lambda Integration
+
         this.testRestAPIGateway.root.addMethod(
             'GET',
             new apigw.LambdaIntegration(this.lambdaFunction, {
                 allowTestInvoke: false,
-                timeout: cdk.Duration.seconds(5),
+                timeout: cdk.Duration.seconds(29),
             })
         );
 

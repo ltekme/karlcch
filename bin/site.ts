@@ -13,8 +13,10 @@ const config = new Config();
 cdk.Tags.of(app).add("Created-by", "CDK_CloudFormation");
 cdk.Tags.of(app).add("Project", config.projectName);
 
+
 const siteContentStack = new SiteContentStack(app, `${config.projectName}-SiteContentStack`, {
-    errorsNotifyEmails: config.motdSubProjectNotifyEmails
+    errorsNotifyEmails: config.motdSubProjectNotifyEmails,
+    domainName: config.domainName
 }, {
     stackName: `${config.projectName}-SiteContentStack`,
     description: `S3 static site store for ${config.domainName}`,
