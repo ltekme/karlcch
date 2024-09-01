@@ -4,9 +4,9 @@ import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
-interface DomainInterface { domainName: string }
+import * as I from '../interfaces';
 
-interface Route53StackParam extends DomainInterface { }
+interface Route53StackParam extends I.IDomainName { }
 export class Route53Stack extends cdk.Stack {
 
     domainName: string
@@ -17,7 +17,7 @@ export class Route53Stack extends cdk.Stack {
 
         this.domainName = param.domainName;
 
-        this.zone = new route53.HostedZone(this, `hosted-zone`, {
+        this.zone = new route53.HostedZone(this, `Hosted Zone`, {
             zoneName: this.domainName
         });
         this.zone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
@@ -26,7 +26,9 @@ export class Route53Stack extends cdk.Stack {
 }
 
 
-interface ACMStackParam extends DomainInterface { route53Zone: route53.HostedZone }
+interface ACMStackParam extends I.IDomainName {
+    route53Zone: route53.HostedZone
+}
 export class ACMStack extends cdk.Stack {
 
     domainName: string
@@ -37,7 +39,7 @@ export class ACMStack extends cdk.Stack {
 
         this.domainName = param.domainName;
 
-        this.certificate = new acm.Certificate(this, `certificate`, {
+        this.certificate = new acm.Certificate(this, `Certificate`, {
             domainName: this.domainName,
             subjectAlternativeNames: [`*.${this.domainName}`],
             certificateName: `${this.domainName} certificate`,

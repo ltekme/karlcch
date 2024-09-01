@@ -3,14 +3,14 @@ import path = require("path");
 export class Config {
     projectName: string = '';
     domainName: string = '';
+    motdSubProjectNotifyEmails: string[];
 
-    route53ImportZoneFile: boolean = false;
-    route53ImportZoneFileLocation: string = path.join(__dirname, 'zone_file.txt');
+    region: string = 'us-east-1';
 
     constructor() {
-        this.projectName = "ltekme"
-        this.domainName = "ltek.me"
-        this.route53ImportZoneFile = true;
+        this.projectName = "ltekme";
+        this.domainName = "ltek.me";
+        this.motdSubProjectNotifyEmails = ['karl@ltek.me'];
     }
 
 }

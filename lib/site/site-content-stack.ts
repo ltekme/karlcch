@@ -4,29 +4,38 @@ import { Construct } from 'constructs';
 
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3_deploy from 'aws-cdk-lib/aws-s3-deployment';
+import { MotdUpdate, MotdUpdateErrorsNotifyEmails } from './site-motd/site-motd';
 
-interface SiteContentStackParam { }
+import * as I from '../interfaces';
 
+interface SiteContentStackParam extends MotdUpdateErrorsNotifyEmails, I.IDomainName { }
 export class SiteContentStack extends cdk.Stack {
 
     bucket: s3.Bucket;
-    bucekt_contents: s3_deploy.BucketDeployment
+    bucekt_contents: s3_deploy.BucketDeployment;
+
+    motdUpdate: MotdUpdate;
 
     constructor(scope: Construct, id: string, param: SiteContentStackParam, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        this.bucket = new s3.Bucket(this, "site-bucket", {
+        this.bucket = new s3.Bucket(this, "Website Content Bucket", {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            autoDeleteObjects: true
+            autoDeleteObjects: true,
         });
 
-        this.bucekt_contents = new s3_deploy.BucketDeployment(this, 'site-bucket-content', {
+        this.bucekt_contents = new s3_deploy.BucketDeployment(this, 'Website Content Bucket - Contents', {
             destinationBucket: this.bucket,
             sources: [s3_deploy.Source.asset(path.join(__dirname, 'site_content'))],
             extract: true
         });
 
+        this.motdUpdate = new MotdUpdate(this, {
+            bucket: this.bucket,
+            errorsNotifyEmails: param.errorsNotifyEmails,
+            domainName: param.domainName
+        });
     }
 
 }
