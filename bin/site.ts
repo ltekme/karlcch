@@ -37,34 +37,17 @@ const siteDomain_Route53_Stack = new siteDomain.Route53Stack(app, `${config.proj
 });
 
 
-const siteDomain_ACM_Stack = new siteDomain.ACMStack(app, `${config.projectName}-SiteDomain-ACM-Stack`, {
+const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
     domainName: config.domainName,
-    route53Zone: siteDomain_Route53_Stack.zone
+    siteBucket: siteContentStack.bucket,
+    route53ZoneID: siteDomain_Route53_Stack.zone.hostedZoneId
 }, {
-    stackName: `${config.projectName}-SiteDomain-ACM-Stack`,
-    description: `${config.domainName} ACM Certificate`,
+    stackName: `${config.projectName}-SiteDistributionStack`,
+    description: `CloudFront Distribution for ${config.domainName}`,
     env: { // Set Region For CloudFront Lambda @ Edge
         region: config.region,
     }
 });
-siteDomain_ACM_Stack.addDependency(siteDomain_Route53_Stack);
-
-
-const siteDistributionStack = new SiteDistributionStack(app, `${config.projectName}-SiteDistributionStack`, {
-    domainName: config.domainName,
-    siteBucket: siteContentStack.bucket,
-    acmCertificate: siteDomain_ACM_Stack.certificate,
-    route53Zone: siteDomain_Route53_Stack.zone
-}, {
-    stackName: `${config.projectName}-SiteDistributionStack`,
-    description: `CloudFront Distribution for ${config.domainName}`,
-    env: {
-        region: config.region,
-    }
-});
-siteDistributionStack.addDependency(siteContentStack);
-siteDistributionStack.addDependency(siteDomain_Route53_Stack);
-siteDistributionStack.addDependency(siteDomain_ACM_Stack);
 
 
 app.synth();

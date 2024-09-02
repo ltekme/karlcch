@@ -11,11 +11,11 @@ import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 
 import * as I from '../interfaces'
+import { env } from 'process';
 
 export interface SiteDistributionStackParams extends I.IDomainName {
     siteBucket: s3.Bucket,
-    acmCertificate: acm.Certificate,
-    route53Zone: route53.HostedZone,
+    route53ZoneID: string,
 };
 
 export class SiteDistributionStack extends cdk.Stack {
@@ -23,14 +23,32 @@ export class SiteDistributionStack extends cdk.Stack {
     siteDistribution: cf.Distribution;
     defualtObjectRewrite: cf.experimental.EdgeFunction;
 
+    certificate: acm.Certificate;
+    route53Zone: route53.IHostedZone;
+
     constructor(scope: Construct, id: string, param: SiteDistributionStackParams, props?: cdk.StackProps) {
         super(scope, id, props);
+
+        const DEFAULT_ROOT_OBJECT = 'index.html';
+
+        // Route53 Zones and Certificate
+        this.route53Zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Imported Zone ID', {
+            hostedZoneId: param.route53ZoneID,
+            zoneName: param.domainName
+        });
+        this.certificate = new acm.Certificate(this, `Certificate`, {
+            domainName: param.domainName,
+            subjectAlternativeNames: [`*.${param.domainName}`],
+            certificateName: `${param.domainName} certificate`,
+            validation: acm.CertificateValidation.fromDns(this.route53Zone)
+        });
+        this.certificate.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
         // Distribution - Trialing path root document append
         this.defualtObjectRewrite = new cf.experimental.EdgeFunction(this, 'HTTP Rewrite Default Document Fn', {
             runtime: lambda.Runtime.NODEJS_LATEST,
             handler: 'index.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda')),
+            code: lambda.Code.fromAsset(path.join(__dirname, 'code-rewrite-lambda'))
         });
 
         // Distribution - Response Header
@@ -73,7 +91,7 @@ export class SiteDistributionStack extends cdk.Stack {
         // Distribution
         this.siteDistribution = new cf.Distribution(this, 'Site CloudFront Distribution', {
 
-            defaultRootObject: 'index.html',
+            defaultRootObject: DEFAULT_ROOT_OBJECT,
 
             defaultBehavior: contentBucketBehavoiur,
 
@@ -90,7 +108,7 @@ export class SiteDistributionStack extends cdk.Stack {
                 param.domainName,
                 `www.${param.domainName}`
             ],
-            certificate: param.acmCertificate,
+            certificate: this.certificate,
 
             errorResponses: [
                 {
@@ -111,13 +129,13 @@ export class SiteDistributionStack extends cdk.Stack {
 
         // Record for Distribution
         new route53.ARecord(this, 'CloudFront Domain Alias Route 53 Record', {
-            zone: param.route53Zone,
+            zone: this.route53Zone,
             target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
             deleteExisting: true
         });
 
         new route53.ARecord(this, 'CloudFront Domain Alias Route 53 Record - WWW', {
-            zone: param.route53Zone,
+            zone: this.route53Zone,
             recordName: 'www',
             target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(this.siteDistribution)),
             deleteExisting: true

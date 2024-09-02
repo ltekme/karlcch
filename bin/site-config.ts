@@ -9,7 +9,7 @@ export class Config {
 
     constructor() {
         this.projectName = "ltekme";
-        this.domainName = "ltek.me";
+        this.domainName = "dev-test.ltek.me";
         this.motdSubProjectNotifyEmails = ['karl@ltek.me'];
     }
 
