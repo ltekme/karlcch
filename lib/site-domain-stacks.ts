@@ -4,21 +4,18 @@ import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 // import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
-import * as I from '../interfaces';
+import * as I from './interfaces';
 
 interface Route53StackParam extends I.IDomainName { }
 export class Route53Stack extends cdk.Stack {
 
-    domainName: string
     zone: route53.HostedZone
 
     constructor(scope: Construct, id: string, param: Route53StackParam, props: cdk.StackProps) {
         super(scope, id, props);
 
-        this.domainName = param.domainName;
-
         this.zone = new route53.HostedZone(this, `Hosted Zone`, {
-            zoneName: this.domainName
+            zoneName: param.domainName
         });
         this.zone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
 

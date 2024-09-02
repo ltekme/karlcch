@@ -1,25 +1,20 @@
 import path = require('path');
 
 import * as cdk from 'aws-cdk-lib';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as cloudwatch_action from 'aws-cdk-lib/aws-cloudwatch-actions';
-import * as eventbridge from 'aws-cdk-lib/aws-events';
-import * as eventbridge_targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as s3 from 'aws-cdk-lib/aws-s3'
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as eventbridge from 'aws-cdk-lib/aws-events';
+// import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as eventbridge_targets from 'aws-cdk-lib/aws-events-targets';
+import * as cloudwatch_action from 'aws-cdk-lib/aws-cloudwatch-actions';
 
 import * as I from '../../interfaces'
 
-export interface MotdUpdateErrorsNotifyEmails {
-    errorsNotifyEmails: string[]
-}
-export interface MotdUpdateParam extends MotdUpdateErrorsNotifyEmails, I.IDomainName {
-    bucket: s3.Bucket
-}
+export interface MotdUpdateParam extends I.MotdUpdateErrorsNotifyEmails, I.IDomainName, I.SiteBucket { }
+
 export class MotdUpdate {
 
     // motd update
@@ -41,9 +36,9 @@ export class MotdUpdate {
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(30),
             handler: 'main.lambda_handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, "code-motd-update-lambda")),
+            code: lambda.Code.fromAsset(path.join(__dirname, "motd_update_lambda")),
             environment: {
-                MOTD_CONTENT_BUCKET: param.bucket.bucketName,
+                MOTD_CONTENT_BUCKET: param.siteBucket.bucketName,
                 DOMAIN_NAME: param.domainName
             },
         });
@@ -61,13 +56,13 @@ export class MotdUpdate {
         }));
 
 
-        param.bucket.addToResourcePolicy(new iam.PolicyStatement({
+        param.siteBucket.addToResourcePolicy(new iam.PolicyStatement({
             principals: [new iam.ArnPrincipal(this.lambdaFunction.role?.roleArn!)],
             effect: iam.Effect.ALLOW,
             actions: ['s3:PutObject'],
             resources: [
-                `${param.bucket.bucketArn}/motd/index.html`,
-                `${param.bucket.bucketArn}/sitemap.xml`
+                `${param.siteBucket.bucketArn}/motd/index.html`,
+                `${param.siteBucket.bucketArn}/sitemap.xml`
             ]
         }));
 
