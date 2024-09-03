@@ -24,13 +24,13 @@ const siteDomain_Route53_Stack = new site_domain.Route53Stack(app, `${config.pro
 });
 
 
-const siteContentStack = new site.SiteContentStack(app, `${config.projectName}-SiteContentStack`, {
+const siteStack = new site.SiteStack(app, `${config.projectName}-SiteStack`, {
     route53ZoneID: siteDomain_Route53_Stack.zone.hostedZoneId,
     errorsNotifyEmails: config.motdSubProjectNotifyEmails,
     domainName: config.domainName,
 }, {
-    stackName: `${config.projectName}-SiteContentStack`,
-    description: `S3 static site store for ${config.domainName}`,
+    stackName: `${config.projectName}-SiteStack`,
+    description: `Site of ${config.domainName}`,
     env: { // Set Region For CloudFront Lambda @ Edge
         region: config.region,
     }

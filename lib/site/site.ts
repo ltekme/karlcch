@@ -11,7 +11,7 @@ import * as I from '../interfaces';
 
 export interface SiteContentStackParam extends I.MotdUpdateErrorsNotifyEmails, I.IDomainName, I.Route53ZoneID { };
 
-export class SiteContentStack extends cdk.Stack {
+export class SiteStack extends cdk.Stack {
 
     bucket: s3.Bucket;
     bucektDeployment: s3_deploy.BucketDeployment;
